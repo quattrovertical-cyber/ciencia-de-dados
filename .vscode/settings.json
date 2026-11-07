@@ -1,3 +1,18 @@
 {
-  "python.defaultInterpreterPath": "C:\\Users\\mathe\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+  "python.defaultInterpreterPath": "C:\\Users\\mathe\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+  "workbench.editorAssociations": {
+    "*.copilotmd": "vscode.markdown.preview.editor",
+    "*.parquet": "duckdb.dataFileViewer",
+    "*.csv": "duckdb.dataFileViewer",
+    "*.tsv": "duckdb.dataFileViewer",
+    "*.xlsx": "duckdb.dataFileViewer"
+  },
+  "vscode-bigquery.gcloudPath": "C:\\Users\\mathe\\Documents\\ciencia-de-dados\\.tools\\gcloud-wrapper.cmd",
+  "vscode-bigquery.pinned-projects": [
+    "unipdsaula-513520"
+  ],
+  "vscode-bigquery.projects": [
+    "unipdsaula-513520"
+  ],
+  "vscode-bigquery.defaultLocation": "US"
 }
