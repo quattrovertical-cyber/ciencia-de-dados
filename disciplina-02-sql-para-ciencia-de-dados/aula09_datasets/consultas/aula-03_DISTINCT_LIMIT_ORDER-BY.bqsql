@@ -1,0 +1,33 @@
+--- EXEMPLO 01: listar uma amostra de 5 entregadores cadastrados.
+SELECT
+    entregador_id,
+    nome,
+    data_inicio
+FROM
+    `unipdsaula-513520.entregaJa.entregadores`
+ORDER BY data_inicio ASC
+LIMIT 5;
+
+--- EXEMPLO 02: Listar todas as categorias de itens únicas.
+SELECT
+    DISTINCT categoria_item
+FROM
+    `unipdsaula-513520.entregaJa.itens`;
+
+--- EXEMPLO 03: Listar entregadores ordenados pela data de início, do mais recente para o mais antigo.
+SELECT
+    entregador_id,
+    nome,
+    data_inicio
+FROM
+    `unipdsaula-513520.entregaJa.entregadores`
+ORDER BY data_inicio DESC, nome ASC;
+
+--- EXEMPLO 04: Listar itens ordenados alfabeticamente por categoria.
+SELECT
+    item_id,
+    nome_item,
+    categoria_item
+FROM
+    `unipdsaula-513520.entregaJa.itens`
+ORDER BY 3 ASC;

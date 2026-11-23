@@ -1,0 +1,57 @@
+--- INNER JOIN: junta APENAS o registro da tabela chave que possua registro correspondente na tabela de consulta.
+--- LEFT JOIN: junta TODOS os registros da tabela chave com os registros correspondentes da tabela de consulta (se não houver registro na consulta, preenche com NULL).
+--- RIGHT JOIN: junta TODOS os registros da tabela de consulta com os registros correspondentes da tabela chave (se não houver registro na chave, preenche com NULL).
+--- FULL JOIN: junta TODOS os registros da tabela chave com TODOS os registros da tabela de consulta (preenche com NULL qualquer ausência).
+
+--- SELECT
+    --- *
+--- FROM tabelaA INNER JOIN tabelaB
+    --- ON tabelaA.id = tabelaB.id;
+
+--- EXEMPLO 01: pedidos com o nome e o plano do cliente que fez cada um.
+SELECT
+    ped.pedido_id,
+    ped.data_hora_pedido,
+    ped.status,
+    clt.nome,
+    clt.plano
+FROM `unipdsaula-513520.entregaJa.pedidos` AS ped
+    INNER JOIN `unipdsaula-513520.entregaJa.clientes_unicos` AS clt
+    ON ped.cliente_id = clt.cliente_id
+    --- WHERE ped.pedido_id IS NULL --- para checar se veio algum pedido vazio (fora do objetivo INNER...).
+    ;
+
+--- EXEMPLO 02: Todos os pedidos + nome do entregador (inclusive se não houver).
+SELECT
+    ped.pedido_id,
+    ped.status,
+    ped.entregador_id,
+    ent.nome AS nome_entregador,
+    ent.veiculo
+FROM `unipdsaula-513520.entregaJa.pedidos` AS ped
+    LEFT JOIN `unipdsaula-513520.entregaJa.entregadores` AS ent --- 
+    ON ped.entregador_id = ent.entregador_id;
+
+--- EXEMPLO 03: todos os restaurantes + pedidos que receberam (inclusive restaurantes sem pedidos).
+SELECT
+    rest.restaurante_id,
+    rest.nome,
+    rest.categoria,
+    ped.pedido_id,
+    ped.status
+FROM `unipdsaula-513520.entregaJa.pedidos` AS ped
+    RIGHT JOIN `unipdsaula-513520.entregaJa.restaurantes`AS rest
+    ON ped.restaurante_id = rest.restaurante_id;
+
+--- EXEMPLO 04: entregadores e pedidos - auditar os dois lados em um único relatório.
+SELECT
+    ent.entregador_id,
+    ent.nome,
+    ped.pedido_id,
+    ped.status
+FROM `unipdsaula-513520.entregaJa.entregadores` AS ent
+    FULL JOIN `unipdsaula-513520.entregaJa.pedidos` AS ped
+    ON ent.entregador_id = ped.entregador_id
+    --- WHERE ent.entregador_id IS NULL --- checar se há NULL dos dois lados
+    --- WHERE ped.pedido_id IS NULL --- checar se há entregador sem pedidos
+    ;

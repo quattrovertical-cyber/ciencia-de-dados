@@ -1,0 +1,68 @@
+--- EXEMPLO 6: UPPER, LOWER, INITCAP - padronizar caixa
+SELECT
+	cliente_id,
+    nome,
+    UPPER(nome) AS nome_maiusculo,
+    LOWER(email) AS email_minusculo,
+    INITCAP(nome) AS inicial_maiuscula --- primeira letra de cada palavra em maiusculo
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` 
+LIMIT 15;
+
+    --- utilizando dentro de filtros
+    SELECT
+        cliente_id,
+        nome,
+        plano
+    FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+    WHERE UPPER(plano) = 'PREMIUM' 
+    LIMIT 15;
+
+--- EXEMPLO 7: TRIM, LTRIM, RTRIM - remover espaços dos extremos ou caracteres invisiveis
+SELECT
+	'   Ana Beatriz   ' AS texto_original,
+    LENGTH('   Ana Beatriz   ') AS tam_original,
+    TRIM('   Ana Beatriz   ') AS texto_depois_trim,
+    LENGTH(TRIM('   Ana Beatriz   ')) AS tam_depois_trim,
+    LTRIM('   Ana Beatriz   ') AS texto_depois_Ltrim,
+    LENGTH(LTRIM('   Ana Beatriz   ')) AS tam_depois_Ltrim,
+    RTRIM('   Ana Beatriz   ') AS texto_depois_Rtrim,
+    LENGTH(RTRIM('   Ana Beatriz   ')) AS tam_depois_Rtrim;
+
+--- EXEMPLO 8: LENGTH - contar caracteres
+SELECT
+	cliente_id,
+    nome,
+    email,
+    LENGTH(nome) AS tamanho_nome,
+    LENGTH(email) AS tamanho_email
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` 
+LIMIT 15;
+
+--- EXEMPLO 9: SBSTR, STRPOS e SPLIT - extrair pedacos do texto
+--- SBSTR: corta o pedaço da string determinando de onde começa e qual o tamanho
+--- STRPOS: da a posição exata de determinado elemento no texto dado
+--- SPLIT: separa o texto em duas partes 
+SELECT
+	cliente_id,
+    nome,
+    STRPOS(email, '@') AS posicao_arroba, 
+    --- recortar o email do comeco até o '@'para obter usuario
+    SUBSTR(email, 1, STRPOS(email, '@')-1) AS usuario,
+    --- recortar o email para encontrar o dominio
+    SUBSTR(email, STRPOS(email, '@')) AS dominio,
+    --- separando o email em 2 itens de lista, e seleciona um dos dois
+    SPLIT(email, '@')[OFFSET(0)] AS usuario_split,
+    SPLIT(email, '@')[OFFSET(1)] AS dominio_split
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` 
+LIMIT 15;
+
+--- EXEMPLO 10: REPLACE e REGEXP_REPLACE - substituir dentro do texto
+SELECT
+	cliente_id,
+    email,
+    --- troca simples de string por outra
+    REPLACE(email, '@exemplo.com', '@entregaja.com') AS email_novo,
+    --- troca por padrão (regex): remove tudo antes e incluindo o '@'
+    REGEXP_REPLACE(email, r'^.+@','') AS so_dominio --- ver padrões de REGEX em leitura complementar
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` 
+LIMIT 15;

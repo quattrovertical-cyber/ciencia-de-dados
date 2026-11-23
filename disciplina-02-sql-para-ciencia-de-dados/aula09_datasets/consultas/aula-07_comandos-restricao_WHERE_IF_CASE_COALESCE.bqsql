@@ -1,0 +1,38 @@
+--- EXEMPLO 01: WHERE --- filtrar clientes premium com mais de 40 anos
+SELECT
+    nome,
+    idade,
+    plano,
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+WHERE plano = 'Premium' AND idade > 40;
+
+--- EXEMPLO 02: IF (decisao binaria) --- classificar pedidos como entrega gratis ou paga
+SELECT
+    pedido_id,
+    status,
+    taxa_entrega,
+    IF(taxa_entrega > 0, 'Entrega Paga', 'Entrega Grátis') AS tipo_entrega
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE status != 'Cancelado';
+
+--- EXEMPLO 03: CASE (decisão multipla) --- classificar clientes por faixa etaria
+SELECT
+    cliente_id,
+    nome,
+    idade,
+    CASE
+        WHEN idade < 25 THEN 'jovem'
+        WHEN idade BETWEEN 25 AND 50 THEN 'adulto'
+        ELSE 'sênior'
+    END
+        AS faixa_etaria
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`;
+
+--- EXEMPLO 04: COALESCE (substituir valores nulos) --- substituir comentarios vazios por texto padrao
+SELECT
+    avaliacao_id,
+    pedido_id,
+    nota,
+    COALESCE(comentario, 'sem comentario') AS comentario
+FROM `unipdsaula-513520.entregaJa.avaliacoes`
+--- WHERE comentario IS NULL; --- filtraria as avaliações onde os comentarios estavam nulos, e COALESCE substitui o valor nulo por 'sem comentario'

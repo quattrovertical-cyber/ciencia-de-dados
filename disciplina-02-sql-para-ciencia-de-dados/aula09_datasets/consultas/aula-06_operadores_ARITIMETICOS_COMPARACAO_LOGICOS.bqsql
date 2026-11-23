@@ -1,0 +1,71 @@
+--- Exemplo 1: calcular valor total de cada item no pedido
+SELECT
+  pedido_item_id,
+  quantidade,
+  preco_unitario,
+  (quantidade * preco_unitario) AS valor_total
+FROM `unipdsaula-513520.entregaJa.pedido_itens`;
+
+--- Exemplo 2: calcular a taxa de entrega por minuto
+SELECT
+  pedido_id,
+  taxa_entrega,
+  tempo_entrega_min,
+  ROUND(taxa_entrega / tempo_entrega_min, 2) AS taxa_por_minuto
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+
+--- exemplo 3: calcular o valor de pedidos com desconto aplicado
+SELECT
+  pedido_id,
+  taxa_entrega,
+  cupom_desconto,
+  ROUND(taxa_entrega - (cupom_desconto/100) * taxa_entrega, 2) AS taxa_com_desconto
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+
+--- exemplo 4: quais itens tem preço unitário maior que 50 reais
+SELECT
+  pedido_item_id,
+  preco_unitario,
+  (preco_unitario > 50) AS item_caro
+FROM `unipdsaula-513520.entregaJa.pedido_itens`
+ORDER BY preco_unitario DESC;
+
+--- exemplo 5: identificar pedidos com tempo de entrega igual ou menor a 40 minutos
+SELECT
+  pedido_id,
+  tempo_entrega_min,
+  (tempo_entrega_min <= 40) AS entrega_rapida
+FROM `unipdsaula-513520.entregaJa.pedidos`
+ORDER BY tempo_entrega_min DESC;
+
+--- exemplo 6: verificar quais pedidos foram pagos com cartão de crédito
+SELECT
+  pedido_id,
+  forma_pagamento,
+  (forma_pagamento = 'Cartão de Crédito') AS pago_cartao_credito
+FROM `unipdsaula-513520.entregaJa.pedidos`
+ORDER BY forma_pagamento ASC;
+
+--- exemplo 7: verificar pedidos com quantidade maior que 1 e preço unitário acima de 40 reais
+SELECT
+  pedido_item_id,
+  quantidade,
+  preco_unitario,
+  (quantidade > 1) AND (preco_unitario > 40) AS item_volume_caro
+FROM `unipdsaula-513520.entregaJa.pedido_itens`
+ORDER BY item_volume_caro DESC;
+
+--- exemplo 8: verificar pedidos com entrega gratuita ou entrega demorada (mais de 60 minutos)
+SELECT
+  pedido_id,
+  taxa_entrega,
+  tempo_entrega_min,
+  (taxa_entrega = 0) OR (tempo_entrega_min > 60) AS entrega_gratis_ou_lenta
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+
+--- exemplo 9: identificar clientes que não são idosos (idade não superior a 60 anos)
+SELECT
+  cliente_id,
+  idade,
+  (NOT idade > 60) AS nao_idoso
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`;

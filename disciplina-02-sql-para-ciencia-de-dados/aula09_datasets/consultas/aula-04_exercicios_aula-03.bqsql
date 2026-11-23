@@ -1,0 +1,75 @@
+--- EXERCICIO 01: o time do crm precisa de uma lista simples com id,
+--- nome e email de clientes,
+--- em ordem alfabética, por nome
+SELECT
+	cliente_id,
+    nome,
+    email
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` 
+ORDER BY nome ASC
+LIMIT 500;
+
+--- EXERCICIO 02: a equipe de parceris quer visualizar o id, nome categoria e cidade de todos os restaurantes cadastrados,
+--- ordene por cidade em ordem alfabética e, dentro de cada cidade,
+--- por nome do restaurante em ordem alfabética
+SELECT
+    restaurante_id,
+    nome,
+    categoria,
+    cidade
+FROM `unipdsaula-513520.entregaJa.restaurantes`
+ORDER BY cidade ASC, nome ASC;
+
+--- EXERCICIO 03: a equipe de operações de entregas precisa de um relatório
+--- contendo informações básicas sobre entregadores
+--- id, nome, cidade e veículo, ordenado por veículo de a->z e 
+--- dentro de cada veículo, por entregador de forma crescente
+SELECT
+    entregador_id,
+    nome,
+    cidade,
+    veiculo
+FROM `unipdsaula-513520.entregaJa.entregadores`
+ORDER BY veiculo ASC, nome ASC;
+
+--- EXERCICIO 04: o time financeiro precisa saber as formas de
+--- pagamento utilizadas pelos clientes, retornar todas as formas
+--- de pagamento únicas, em ordem alfabética
+SELECT DISTINCT
+    forma_pagamento
+FROM `unipdsaula-513520.entregaJa.pedidos`
+ORDER BY forma_pagamento ASC;
+
+--- EXERCICIO 05: a equipe de marketing e categoria quer montar um
+--- banner promocional e precisa de 3 exemplos de categorias de cardápios,
+--- retornar lista com categorias de itens sem duplicadas
+--- em ordem alfabética decrescente, limitando a 3 resultados
+SELECT DISTINCT
+    categoria_item
+FROM `unipdsaula-513520.entregaJa.itens`
+ORDER BY categoria_item DESC
+LIMIT 3;
+
+--- EXERCICIO 06: o time de operações quer identificar os pedidos mais
+--- demorados, para gargalo de entrega, retornar
+--- id do pedido, forma de pagamento e tempo de entrega,
+--- ordenar do maior para o menor tempo de entrega, limitando a 10 resultados
+SELECT  
+    pedido_id,
+    forma_pagamento,
+    tempo_entrega_min
+FROM `unipdsaula-513520.entregaJa.pedidos`
+ORDER BY tempo_entrega_min DESC
+LIMIT 10;
+
+--- EXERCICIO 07: o time de cadastro quer identificar os clientes mais jovens da base
+--- para uma campanha voltada ao público jovem,
+--- retornar id, nome, idade, 
+--- ordenar do menor para o maior, limitando a 5 resultados
+SELECT  
+    cliente_id,
+    nome,
+    idade
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+ORDER BY idade ASC
+LIMIT 5;

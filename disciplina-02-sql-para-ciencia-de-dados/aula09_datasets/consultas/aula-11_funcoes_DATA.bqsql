@@ -1,0 +1,54 @@
+--- EXEMPLO 1: FUNCAO EXTRACT - extrair partes de uma data
+SELECT
+	cliente_id,
+    nome,
+    data_cadastro,
+    EXTRACT(YEAR FROM data_cadastro) AS ano_cadastro,
+    EXTRACT(MONTH FROM data_cadastro) AS mes_cadastro,
+    EXTRACT(DAY FROM data_cadastro) AS dia_cadastro,
+    EXTRACT(DAYOFWEEK FROM data_cadastro) AS dia_semana_cadastro --- domingo = dia 1
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` 
+LIMIT 15;
+
+--- EXEMPLO 2: FUNCAO DATE_TRUNC - truncar uma data para o primeiro dia do mês, trimestre ou ano
+SELECT
+    pedido_id,
+    data_hora_pedido,
+    DATE_TRUNC(DATE(data_hora_pedido), MONTH) AS inicio_mes, --- trunca qualquer data para o primeiro dia do mês
+    DATE_TRUNC(DATE(data_hora_pedido), WEEK) AS inicio_semana, --- trunca qualquer data para o primeiro dia da semana
+    DATE_TRUNC(DATE(data_hora_pedido), YEAR) AS primeiro_dia_ano --- trunca qualquer data para o primeiro dia do ano
+FROM `unipdsaula-513520.entregaJa.pedidos`
+LIMIT 15;
+
+--- EXEMPLO 3: FUNCAO DATE_DIFF - calcular a diferença entre duas datas
+SELECT
+    cliente_id,
+    nome,
+    data_cadastro,
+    DATE_DIFF(CURRENT_DATE(), data_cadastro, DAY) AS dias_como_cliente, --- subtrai a data de hoje da data do cadastro
+    DATE_DIFF(CURRENT_DATE(), data_cadastro, MONTH) AS meses_como_cliente,
+    DATE_DIFF(CURRENT_DATE(), data_cadastro, YEAR) AS anos_como_cliente
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+LIMIT 15;
+
+--- EXEMPLO 4: FUNCAO DATE_ADD e DATE_SUB - somar ou subtrair periodos
+SELECT
+    cliente_id,
+    nome,
+    data_cadastro,
+    DATE_ADD(data_cadastro, INTERVAL 1 YEAR) AS aniversario_1_ano,
+    DATE_ADD(data_cadastro, INTERVAL 30 DAY) AS trinta_dias_depois,
+    DATE_SUB(data_cadastro, INTERVAL 6 MONTH) AS seis_meses_antes 
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+LIMIT 15;
+
+--- EXEMPLO 5: FORMAT_DATE e PARSE_DATE - data <-> texto
+SELECT
+    pedido_id,
+    data_hora_pedido,
+    --- data-> texto formatado
+    FORMAT_DATE('%d/%m/%Y', DATE(data_hora_pedido)) AS data_br,
+    FORMAT_DATE('%A', DATE(data_hora_pedido)) AS dia_semana,
+    PARSE_DATE('%d/%m/%Y', '25/12/2023') AS natal_convertido --- converte data-texto para data nativa
+FROM `unipdsaula-513520.entregaJa.pedidos`
+LIMIT 15;

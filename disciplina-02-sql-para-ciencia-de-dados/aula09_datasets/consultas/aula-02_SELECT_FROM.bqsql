@@ -1,0 +1,17 @@
+--- EXEMPLO 01: selecionar todas as colunas da tabela de restaurantes.
+SELECT
+  *
+FROM `unipdsaula-513520.entregaJa.restaurantes`;
+
+--- EXEMPLO 02: Selecionar o nome e a cidade dos clientes.
+SELECT
+  nome,
+  cidade
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`;
+
+--- EXEMPLO 03: Selecionar o nome e o veículo dos entregadores
+SELECT
+  nome,
+  veiculo
+FROM
+  `unipdsaula-513520.entregaJa.entregadores`;

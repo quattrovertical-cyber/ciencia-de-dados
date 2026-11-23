@@ -1,0 +1,141 @@
+--- EXERCICIO 01: listar clientes do plano premium com mais de 45 anos,
+--- mostrar id, nome, idade e cidade, em ordem decrescente.
+SELECT
+cliente_id,
+nome,
+idade,
+cidade
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+WHERE plano = 'Premium' AND idade > 45
+ORDER BY idade DESC;
+
+--- EXERCICIO 02: filtrar pedidos, status concluido, tempo de entrega
+--- menor ou igual a 25 minutos, exibir o id, o tempo de entrega,
+--- forma de pagamento, em ordem decrescente do menor para o maior
+--- tempo, limitar a 100 resultados.
+SELECT
+    pedido_id,
+    tempo_entrega_min,
+    forma_pagamento
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE status = 'Concluído' AND tempo_entrega_min <= 25
+ORDER BY tempo_entrega_min ASC
+LIMIT 100;
+
+--- EXERCICIO 03: listar itens de pedido com valor total acima de 30
+--- reais, exibir id do item, quantidade, preço unitário, e coluna
+--- calculada com o valor total do item (quantidade * preço unitário),
+--- em ordem decrescente do valor total, limitada a 150 resultados.
+SELECT
+    pedido_item_id,
+    quantidade,
+    preco_unitario,
+    (quantidade * preco_unitario) AS valor_total
+FROM `unipdsaula-513520.entregaJa.pedido_itens`
+WHERE (quantidade * preco_unitario) > 30
+ORDER BY valor_total DESC
+LIMIT 1500;
+
+--- EXERCICIO 04: listar cidades unicas onde ha clientes do plano
+--- gratis, regiao sudeste, em ordem alfabetica
+SELECT DISTINCT
+    cidade
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+WHERE plano = 'Grátis' AND regiao = 'Sudeste'
+ORDER BY cidade ASC;
+
+--- EXERCICIO 05: classificar pedidos por duração de entrega, exibir
+--- id do pedido, tempo de entrega, criar coluna categoria_entrega
+--- com regras: ate 20 minutos = rapido, de 21 a 45 minutos = normal,
+--- acima de 45 minutos = lento. Limitar a 100 linhas e ordenar
+--- por tempo de entrega crescente.
+SELECT
+    pedido_id,
+    tempo_entrega_min,
+    CASE
+        --- WHEN tempo_entrega_min IS NULL THEN 'sem entrega'
+        WHEN tempo_entrega_min <= 20 THEN 'rápido'
+        WHEN tempo_entrega_min <= 45 THEN 'normal'
+        ELSE 'lento'
+    END AS categoria_entrega
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE tempo_entrega_min IS NOT NULL
+ORDER BY tempo_entrega_min ASC
+LIMIT 100;
+
+--- EXERCICIO 06: marcar cada cliente como maior ou menor de idade,
+--- exibir o id, nome, idade, criar coluna situacao, que mostre
+--- 'maior de idade' para clientes com 18 anos ou mais, e
+--- 'menor de idade' caso contrario. Use if, limite a 15 linhas.
+SELECT
+    cliente_id,
+    nome,
+    idade,
+    IF(idade >= 18, 'maior de idade', 'menor de idade') AS situacao
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+LIMIT 1500;
+
+--- EXERCICIO 07: filtrar id do pedido, status, e coluna tempo de
+--- entrega, usar COALESCE para substituir valores nulos por 0
+--- limitar a 100 linhas, ordenar por tempo de entrega crescente.
+SELECT
+    pedido_id,
+    status,
+    COALESCE(tempo_entrega_min, 0) AS tempo_entrega_min
+FROM `unipdsaula-513520.entregaJa.pedidos`
+ORDER BY tempo_entrega_min ASC
+LIMIT 100;
+
+--- EXERCICIO 08: identificar pedidos que ainda não foram atribuidos
+--- a um entregador, foram pagos com pix ou cartado de credito,
+--- exibir id do pedido, status, forma de pagamento, id do entregador
+--- ordernar por data_hora_pedido decrescente, limitar a 100 linhas.
+SELECT
+    pedido_id,
+    status,
+    forma_pagamento,
+    entregador_id
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE entregador_id IS NULL AND forma_pagamento IN ('PIX', 'Cartão de Crédito')
+ORDER BY data_hora_pedido DESC
+LIMIT 100;
+
+--- EXERCICIO 09: identificar restaurantes com taxa de entrega gratuita
+--- ou tempo medio de preparo abaixo de 40 minutos, retorne o
+--- id, nome, categoria, taxa de entrega e o tempo médio,
+--- ordenar por tempo médio crescente, limitar a 100 linhas.
+SELECT
+    restaurante_id,
+    nome,
+    categoria,
+    taxa_entrega,
+    tempo_medio_min
+FROM `unipdsaula-513520.entregaJa.restaurantes`
+WHERE taxa_entrega = 0 OR tempo_medio_min < 40
+ORDER BY tempo_medio_min ASC
+LIMIT 100;
+
+--- EXERCICIO 10: calcular o valor final da taxa de entrega apos desconto
+--- do cupom, para os pedidos onde a taxa original era maior que zero
+--- exibir id do pedido, taxa original, valor do cupom, e coluna taxa_final
+--- arredondada em 2 casas decimais. Classificar com case uma coluna
+--- "faixa_desconto": cupom =0 -> "sem desconto",
+--- cupom >=1 e <=10 -> "desconto pequeno",
+--- cupom >10 -> "desconto alto". Limitar a 100 linhas, ordenar
+--- por taxa_final decrescente.
+SELECT
+    pedido_id,
+    taxa_entrega,
+    --- Valores nulos (NULL): Se algum pedido não tiver cupom aplicado e o valor na tabela for NULL (em vez de 0), ele não vai cair na primeira condição (cupom_desconto = 0).
+    IFNULL(cupom_desconto, 0) AS cupom_desconto,
+    ROUND(taxa_entrega - ((taxa_entrega * IFNULL(cupom_desconto, 0)) / 100), 2) AS taxa_final,
+    CASE
+        WHEN IFNULL(cupom_desconto, 0) = 0 THEN 'sem desconto'
+        WHEN cupom_desconto <= 10 THEN 'desconto pequeno'
+        ELSE 'desconto alto'
+    END 
+        AS faixa_desconto
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE taxa_entrega > 0
+ORDER BY taxa_final DESC
+---LIMIT 1000;

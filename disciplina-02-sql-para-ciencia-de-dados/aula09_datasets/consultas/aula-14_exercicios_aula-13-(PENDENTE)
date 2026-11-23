@@ -1,0 +1,63 @@
+--- EXERCICIO 02: apresentar relatorio com todos os pedidos e o nome
+--- do entregador, quando o pedido não tiver entregador, mostre
+--- 'sem entregador', traga pedido_id, status, entregador
+--- ordene por pedido_id e limite a 1500 linhas.
+SELECT
+    ped.pedido_id,
+    ped.status,
+    COALESCE(ent.nome, 'sem entregador') AS nome_entregador
+FROM `unipdsaula-513520.entregaJa.pedidos` ped
+    LEFT JOIN `unipdsaula-513520.entregaJa.entregadores` ent
+        ON ped.entregador_id = ent.entregador_id
+ORDER BY ped.pedido_id ASC 
+LIMIT 1500;
+
+--- EXERCICIO 07: analisar pedidos agrupados pelo inicio do mes,
+--- trazer pedido_id, nome do cliente, restaurante, inicio_mes
+--- (DATE_TRUNC no primeiro dia do mesm do pedido) e 
+--- taxa_entrega, ordene por inicio_mes decrescente
+--- e limite a 1500 linhas.
+SELECT
+    ped.pedido_id,
+    clt.nome AS nome_cliente,
+    res.nome AS nome_restaurante,
+    DATE_TRUNC(DATE(ped.data_hora_pedido), MONTH) AS inicio_mes, --- DATE converte de timestamp para data
+    ROUND(SAFE_DIVIDE(ped.taxa_entrega, 100), 2) AS taxa_entrega  --- convertendo a taxa de entrega de percentil para decimal
+FROM `unipdsaula-513520.entregaJa.pedidos` ped
+    INNER JOIN `unipdsaula-513520.entregaJa.clientes_unicos` clt
+        ON ped.cliente_id = clt.cliente_id
+    INNER JOIN `unipdsaula-513520.entregaJa.restaurantes` res
+        ON ped.restaurante_id = res.restaurante_id
+ORDER BY inicio_mes DESC
+LIMIT 1500;
+
+--- EXERCICIO 10: apresentar relatorio consolidado dos pedidos
+--- concluídos feitos por clientes no plano premium,
+--- trazer pedido_id, nome_cliente (em maiusculo),
+--- primeiro_nome_cliente, nome_restaurante, ano_pedido,
+--- tempo_entrega, classificacao_entrega (CASE), 
+--- se tempo <= 30 -> 'rapido',
+--- se tempo > 30 e <= 60 -> 'normal', se tempo > 60 -> 'lento',
+--- ordene por tempo_entrega crescente e limite a 1500 linhas.
+SELECT
+    ped.pedido_id,
+    UPPER(clt.nome) AS nome_cliente, --- nome em maiusculo
+    SPLIT(clt.nome, ' ')[OFFSET(0)] AS primeiro_nome_cliente, --- cria listas separando por delimitador e pega o primeiro elemento da lista
+    res.nome AS nome_restaurante,
+    EXTRACT(YEAR FROM ped.data_hora_pedido) AS ano_pedido,
+    COALESCE(ped.tempo_entrega_min, 0) AS tempo_entrega, --- caso o tempo de entrega seja nulo, substitui por 0
+    CASE
+        WHEN COALESCE(ped.tempo_entrega_min, 0) <= 30 THEN 'rapido'
+        WHEN COALESCE(ped.tempo_entrega_min, 0) BETWEEN 31 AND 60 THEN 'normal'
+        ELSE 'lento'
+    END AS classificacao_entrega
+FROM `unipdsaula-513520.entregaJa.pedidos` ped
+    INNER JOIN `unipdsaula-513520.entregaJa.clientes_unicos` clt
+        ON ped.cliente_id = clt.cliente_id
+    INNER JOIN `unipdsaula-513520.entregaJa.restaurantes` res
+        ON ped.restaurante_id = res.restaurante_id
+WHERE clt.plano = 'Premium' AND ped.status = 'Concluído'
+ORDER BY tempo_entrega ASC
+LIMIT 1500;
+
+--- TERMINAR A LISTA DE EXERCÍCIOS DA AULA 14!!!!!!!!!!!!!!!!
