@@ -1,0 +1,36 @@
+--- COUNT: conta a quantidade de registros
+------------------------------------------
+--SELECT
+    --COUNT(*) AS total,
+    --COUNT(DISTINCT id_cliente) AS clientes
+--FROM pedidos;
+------------------------------------------
+--- SUM: soma os valores de uma colun''
+--- AVG: calcula a média dos valores não nulos de uma coluna
+------------------------------------------
+--SELECT
+    --SUM(valor) AS valor_total,
+    --ROUND(AVG(valor), 2) AS media_receita
+--FROM `unipdsaula-513520.entregaJa.pedidos`;
+------------------------------------------
+--- MAX: retorna o maior valor de uma coluna
+--- MIN: retorna o menor valor de uma coluna
+------------------------------------------
+--SELECT
+    --MAX(valor) AS maior_valor,
+    --MIN(valor) AS menor_valor,
+    --MAX(data_pedido) AS ultima_data,
+--FROM `unipdsaula-513520.entregaJa.pedidos`;
+------------------------------------------
+--- GROUP BY: permite agrupar os resultados por uma ou mais colunas.
+--- as soluções anteriores retornam apenas um resultado,
+--- para toda a base de dados, sem diferenciar categorias.
+--- GROUP BY permite obter resultados por categoria.
+------------------------------------------
+--SELECT
+    --cateboria,
+    --COUNT(*) AS pedidos,
+    --SUM(valor) AS receita
+--FROM pedidos
+--GROUP BY categoria;
+------------------------------------------
