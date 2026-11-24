@@ -2,7 +2,7 @@
 SELECT
     nome,
     idade,
-    plano,
+    plano
 FROM `unipdsaula-513520.entregaJa.clientes_unicos`
 WHERE plano = 'Premium' AND idade > 40;
 
@@ -35,4 +35,5 @@ SELECT
     nota,
     COALESCE(comentario, 'sem comentario') AS comentario
 FROM `unipdsaula-513520.entregaJa.avaliacoes`
+;
 --- WHERE comentario IS NULL; --- filtraria as avaliações onde os comentarios estavam nulos, e COALESCE substitui o valor nulo por 'sem comentario'

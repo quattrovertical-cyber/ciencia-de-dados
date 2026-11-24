@@ -1,7 +1,17 @@
---- INNER JOIN: junta APENAS o registro da tabela chave que possua registro correspondente na tabela de consulta.
---- LEFT JOIN: junta TODOS os registros da tabela chave com os registros correspondentes da tabela de consulta (se não houver registro na consulta, preenche com NULL).
---- RIGHT JOIN: junta TODOS os registros da tabela de consulta com os registros correspondentes da tabela chave (se não houver registro na chave, preenche com NULL).
---- FULL JOIN: junta TODOS os registros da tabela chave com TODOS os registros da tabela de consulta (preenche com NULL qualquer ausência).
+/* ----------------------------------------
+INNER JOIN: junta APENAS o registro da tabela chave que possua 
+            registro correspondente na tabela de consulta.
+LEFT JOIN:  junta TODOS os registros da tabela chave com os 
+            registros correspondentes da tabela de consulta,
+            se não houver registro na consulta, preenche com
+            NULL.
+RIGHT JOIN: junta TODOS os registros da tabela de consulta 
+            com os registros correspondentes da tabela chave,
+            se não houver registro na chave, preenche com NULL.
+FULL JOIN:  junta TODOS os registros da tabela chave com TODOS
+            os registros da tabela de consulta, preenche com NULL
+            qualquer ausência.
+*/  ----------------------------------------
 
 --- SELECT
     --- *

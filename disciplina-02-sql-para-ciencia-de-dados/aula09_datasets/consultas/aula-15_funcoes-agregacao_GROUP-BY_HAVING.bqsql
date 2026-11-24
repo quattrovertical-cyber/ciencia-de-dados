@@ -1,59 +1,49 @@
---- COUNT: conta a quantidade de registros
+/*
+COUNT: conta a quantidade de registros
 ------------------------------------------
---SELECT
-    --COUNT(*) AS total,
-    --COUNT(DISTINCT id_cliente) AS clientes
---FROM pedidos;
+SELECT
+    COUNT(*) AS total,
+    COUNT(DISTINCT id_cliente) AS clientes
+FROM pedidos;
 ------------------------------------------
---- SUM: soma os valores de uma colun''
---- AVG: calcula a média dos valores não nulos de uma coluna
+SUM: soma os valores de uma colun''
+AVG: calcula a média dos valores não nulos de uma coluna
 ------------------------------------------
---SELECT
-    --SUM(valor) AS valor_total,
-    --ROUND(AVG(valor), 2) AS media_receita
---FROM `unipdsaula-513520.entregaJa.pedidos`;
+SELECT
+    SUM(valor) AS valor_total,
+    ROUND(AVG(valor), 2) AS media_receita
+FROM `unipdsaula-513520.entregaJa.pedidos`;
 ------------------------------------------
---- MAX: retorna o maior valor de uma coluna
---- MIN: retorna o menor valor de uma coluna
+MAX: retorna o maior valor de uma coluna
+MIN: retorna o menor valor de uma coluna
 ------------------------------------------
---SELECT
-    --MAX(valor) AS maior_valor,
-    --MIN(valor) AS menor_valor,
-    --MAX(data_pedido) AS ultima_data,
---FROM `unipdsaula-513520.entregaJa.pedidos`;
+SELECT
+    MAX(valor) AS maior_valor,
+    MIN(valor) AS menor_valor,
+    MAX(data_pedido) AS ultima_data
+FROM `unipdsaula-513520.entregaJa.pedidos`;
 ------------------------------------------
---- GROUP BY: permite agrupar os resultados por uma ou mais colunas.
---- as soluções anteriores retornam apenas um resultado,
---- para toda a base de dados, sem diferenciar categorias.
---- GROUP BY permite obter resultados por categoria.
+GROUP BY: permite agrupar os resultados por uma ou mais colunas.
+as soluções anteriores retornam apenas um resultado,
+para toda a base de dados, sem diferenciar categorias.
+GROUP BY permite obter resultados por categoria.
 ------------------------------------------
---SELECT --- toda coluna que nao estiver em uma função de agregação, deve estar no GROUP BY
-    --categoria,
-    --COUNT(*) AS pedidos,
-    --SUM(valor) AS receita
---FROM pedidos
---GROUP BY categoria;
+SELECT --- toda coluna que nao estiver em uma função de agregação, deve estar no GROUP BY
+    categoria,
+    COUNT(*) AS pedidos,
+    SUM(valor) AS receita
+FROM pedidos
+GROUP BY categoria;
 ------------------------------------------
---- HAVING: permite filtrar os resultados de uma consulta agregada.
---- HAVING é usado em conjunto com GROUP BY, para filtrar os resultados agregados.
---- WHERE é usado para filtrar os registros (linhas) antes da agregação, enquanto HAVING é usado para filtrar os resultados após a agregação (grupos).
+HAVING: permite filtrar os resultados de uma consulta agregada.
+HAVING é usado em conjunto com GROUP BY, para filtrar os resultados agregados.
+WHERE é usado para filtrar os registros (linhas) antes da agregação, enquanto HAVING é usado para filtrar os resultados após a agregação (grupos).
 ------------------------------------------
---SELECT
-    --categoria,
-    --COUNT(*) AS total_vendas
---FROM produtos
---WHERE preco> 10 --- 1. filtra os registros antes da agregação (linha por linha)
---GROUP BY categoria
---HAVING COUNT(*) > 50; --- 2. filtra os grupos após a agregação
-
-------------------------------------------
---- ORDEM LOGICA DAS CLAUSULAS SQL
-------------------------------------------
--- 1. FROM: de onde vem os dados
--- 2. WHERE: filtra os registros (linhas) antes da agregação
--- 3. GROUP BY: agrupa os registros por uma ou mais colunas
--- 4. HAVING: filtra os grupos após a agregação
--- 5. SELECT: seleciona as colunas e funções de agregação após o processamento
--- 6. ORDER BY: ordena os resultados finais
--- 7. LIMIT: limita o número de resultados retornados
--- 8. OFFSET: define o deslocamento dos resultados retornados
+SELECT
+    categoria,
+    COUNT(*) AS total_vendas
+FROM produtos
+WHERE preco> 10 --- 1. filtra os registros antes da agregação (linha por linha)
+GROUP BY categoria
+HAVING COUNT(*) > 50; --- 2. filtra os grupos após a agregação.
+*/

@@ -1,0 +1,160 @@
+/*
+Exercícios da aula 22 (ATUAL 17):
+Conteúdo acumulado (aulas 10 a 21):
+- Consultas básicas: `SELECT`, `FROM`, `DISTINCT`, `LIMIT`, `ORDER BY`
+- Filtros e operadores: `WHERE` com aritméticos (`+`, `-`, `*`, `/`), comparação (`>`, `<`, `>=`, `<=`, `=`, `<>`) e lógicos (`AND`, `OR`, `NOT`)
+- Condicionais: `IF`, `CASE`, `COALESCE`
+- Funções de data: `EXTRACT`, `DATE_TRUNC`, `DATE_DIFF`/`DATETIME_DIFF`, `DATE_ADD`/`DATE_SUB`, `FORMAT_DATE`/`PARSE_DATE`, `CURRENT_DATE`
+- Funções de texto: `UPPER`/`LOWER`/`INITCAP`, `TRIM`/`LTRIM`/`RTRIM`, `LENGTH`, `SUBSTR`/`STRPOS`/`SPLIT`, `REPLACE`/`REGEXP_REPLACE`
+- JOINs: `INNER`, `LEFT`, `RIGHT`, `FULL`
+- Agregação e agrupamento: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `GROUP BY`, `HAVING`
+
+> 🎯 Progressão: os primeiros exercícios usam uma agregação sobre a tabela inteira; os do meio introduzem `GROUP BY`; os últimos combinam `WHERE` + `GROUP BY` + `HAVING` + `JOIN`.
+*/
+
+--- Exercício 01 (fácil): O time Executivo quer saber quantos 
+--- clientes diferentes já fizeram pelo menos um pedido.
+--- Retorne uma única coluna `clientes_ativos`.
+SELECT
+    COUNT(DISTINCT c.cliente_id) AS clientes_ativos
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` AS c
+    LEFT JOIN `unipdsaula-513520.entregaJa.pedidos` AS p
+        ON c.cliente_id = p.cliente_id
+WHERE p.cliente_id IS NOT NULL AND LOWER(p.status) = 'concluído'
+;
+
+--- Exercício 02 (fácil): A equipe de Operações precisa das datas
+--- do primeiro e do último pedido concluído da plataforma. 
+--- Retorne duas colunas: `primeiro_pedido` e `ultimo_pedido`.
+SELECT
+    MIN(DATE(data_hora_pedido)) AS primeiro_pedido,
+    MAX(DATE(data_hora_pedido)) AS ultimo_pedido
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE status = 'Concluído'
+;
+
+--- Exercício 03 (fácil): O time de BI quer o tempo médio de 
+--- entrega dos pedidos concluídos, arredondado em 2 casas decimais.
+--- Retorne uma única coluna `tempo_medio_entrega`.
+SELECT
+    ROUND(AVG(tempo_entrega_min), 2) AS tempo_medio_entrega
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE status = 'Concluído' AND tempo_entrega_min IS NOT NULL
+;
+
+--- Exercício 04 (fácil): A equipe de Parcerias quer saber quantos
+--- restaurantes existem em cada categoria. Retorne `categoria` e
+--- `qtd_restaurantes`. Ordene do maior para o menor e
+--- limite a 10 linhas.
+SELECT
+    COALESCE(categoria, 'Sem categoria') AS categoria,
+    COUNT(restaurante_id) AS qtd_restaurantes
+FROM `unipdsaula-513520.entregaJa.restaurantes`
+WHERE categoria IS NOT NULL
+GROUP BY categoria
+;
+
+--- Exercício 05 (médio): O time Financeiro quer o total arrecadado
+--- em taxa de entrega por forma de pagamento, considerando
+--- apenas pedidos concluídos. Traga `forma_pagamento` e 
+--- `total_taxas` (arredondado em 2 casas).
+--- Ordene do maior para o menor.
+SELECT
+    forma_pagamento,
+    ROUND(SUM(taxa_entrega), 2) AS total_taxas
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE status = 'Concluído' AND taxa_entrega IS NOT NULL
+GROUP BY forma_pagamento
+ORDER BY total_taxas DESC
+;
+
+--- Exercício 06 (médio): O time de BI quer o tempo médio de
+--- entrega por região do cliente, considerando apenas pedidos
+--- concluídos. Traga `regiao`, `qtd_pedidos` e `tempo_medio` 
+--- (arredondado em 2 casas). Ordene por `tempo_medio` crescente.
+SELECT
+    c.regiao,
+    COUNT(p.pedido_id) AS qtd_pedidos,
+    ROUND(AVG(p.tempo_entrega_min), 2) AS tempo_medio
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` AS c
+    INNER JOIN `unipdsaula-513520.entregaJa.pedidos` AS p 
+        ON p.cliente_id = c.cliente_id
+WHERE LOWER(p.status) = 'concluído' AND p.tempo_entrega_min IS NOT NULL
+GROUP BY c.regiao
+ORDER BY tempo_medio ASC
+;
+
+--- Exercício 07 (médio-difícil): O time de Customer Success quer
+--- um ranking dos top 10 restaurantes com maior nota média.
+--- Traga `nome` do restaurante, `qtd_avaliacoes` e `nota_media`
+--- arredondada em 2 casas. Ordene por `nota_media` decrescente.
+SELECT
+    r.nome,
+    COUNT(*) AS qtd_avaliacoes, --- como há match perfeito com INNER, é possível dizer que toda avaliação tem seu restaurante
+    ROUND(AVG(a.nota), 2) AS nota_media
+FROM `unipdsaula-513520.entregaJa.avaliacoes` AS a
+    INNER JOIN `unipdsaula-513520.entregaJa.pedidos` AS p
+        ON a.pedido_id = p.pedido_id
+    INNER JOIN `unipdsaula-513520.entregaJa.restaurantes` AS r
+        ON p.restaurante_id = r.restaurante_id
+WHERE LOWER(p.status) = 'concluído' AND a.nota IS NOT NULL
+GROUP BY r.nome
+ORDER BY nota_media DESC
+LIMIT 10
+;
+
+--- Exercício 08 (médio-difícil): O time de Marketing quer
+--- identificar categorias de restaurante com mais de 3 unidades
+--- cadastradas (para focar campanhas nas categorias mais
+--- representativas). Traga `categoria` e `qtd_restaurantes`.
+--- Ordene do maior para o menor.
+SELECT
+    categoria,
+    COUNT(restaurante_id) AS qtd_restaurantes
+FROM `unipdsaula-513520.entregaJa.restaurantes`
+WHERE categoria IS NOT NULL AND nome IS NOT NULL
+GROUP BY categoria
+HAVING COUNT(restaurante_id) > 3
+ORDER BY qtd_restaurantes DESC
+;
+
+--- Exercício 09 (difícil): O time Financeiro quer as formas de
+--- pagamento cujo total arrecadado em taxa de entrega passou
+--- de R$ 5.000 — considerando apenas pedidos concluídos. Traga
+--- `forma_pagamento`, `qtd_pedidos` e `total_arrecadado`,
+--- arredondado em 2 casas. Ordene por `total_arrecadado`
+--- decrescente.
+SELECT
+    forma_pagamento,
+    COUNT(pedido_id) AS qtd_pedidos,
+    ROUND(SUM(taxa_entrega), 2) AS total_arrecadado
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE LOWER(status) = 'concluído' AND taxa_entrega IS NOT NULL
+GROUP BY forma_pagamento
+HAVING total_arrecadado > 5000
+ORDER BY total_arrecadado DESC
+;
+
+--- Exercício 10 (difícil): O time Executivo quer um ranking de
+--- restaurantes de excelência: aqueles que têm média de nota maior
+--- ou igual a 4 e mais de 10 avaliações — considerando apenas 
+--- pedidos concluídos.
+--- Traga `nome` do restaurante, `categoria`, `qtd_avaliacoes` e
+--- `nota_media` (arredondada em 2 casas).
+--- Ordene por `nota_media` decrescente e limite a 15 linhas.
+SELECT
+    r.nome,
+    r.categoria,
+    COUNT(a.nota) AS qtd_avaliacoes,
+    ROUND(AVG(a.nota), 2) AS nota_media
+FROM `unipdsaula-513520.entregaJa.pedidos` AS p
+    INNER JOIN `unipdsaula-513520.entregaJa.restaurantes` AS r
+        ON p.restaurante_id = r.restaurante_id
+    INNER JOIN `unipdsaula-513520.entregaJa.avaliacoes` AS a
+        ON a.pedido_id = p.pedido_id
+WHERE LOWER(p.status) = 'concluído' AND a.nota IS NOT NULL
+GROUP BY r.nome, r.categoria
+HAVING nota_media >= 4 AND qtd_avaliacoes > 10
+ORDER BY nota_media DESC
+LIMIT 15
+;

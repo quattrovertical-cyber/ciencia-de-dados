@@ -1,0 +1,54 @@
+--- EXEMPLO 01: quantidade total de pedidos na tabela
+SELECT 
+    COUNT(*) AS total_pedidos, --- conta tudo, inclusive nulos
+    COUNT(entregador_id) AS pedidos_com_entregador,
+    COUNT(DISTINCT cliente_id) AS clientes_unicos --- evita duplicados
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+
+--- EXEMPLO 02: somar a quantidade de itens
+SELECT 
+    SUM(quantidade) AS total_itens
+FROM `unipdsaula-513520.entregaJa.pedido_itens`;
+
+--- EXEMPLO 03: AVG com ROUND, para saber tempo médio de entrega
+SELECT 
+    ROUND(AVG(tempo_entrega_min), 2) AS tempo_medio_entrega,
+    AVG(taxa_entrega) AS taxa_media
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+
+--- EXEMPLO 04: MIN e MAX para saber quando foi feito o primeiro e o último pedido
+SELECT 
+    MIN(data_hora_pedido) AS primeiro_pedido,
+    MAX(data_hora_pedido) AS ultimo_pedido,
+    MIN(tempo_entrega_min) AS entrega_mais_rapida,
+    MAX(tempo_entrega_min) AS entrega_mais_lenta
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+
+--- EXEMPLO 05: GROUP BY para saber quantos pedidos por status
+SELECT 
+    status,
+    COUNT(*) AS qtd_pedidos
+FROM `unipdsaula-513520.entregaJa.pedidos`
+GROUP BY status
+ORDER BY qtd_pedidos DESC;
+
+--- EXEMPLO 06: calcular diferentes métricas agrupadas por pagamento e região
+SELECT
+    c.regiao,
+    p.forma_pagamento,
+    COUNT(*) AS qtd_pedidos,
+    ROUND(AVG(p.taxa_entrega), 2) AS taxa_media,
+    SUM(p.taxa_entrega) AS total_taxas
+FROM `unipdsaula-513520.entregaJa.pedidos` AS p
+INNER JOIN `unipdsaula-513520.entregaJa.clientes_unicos` AS c
+    ON p.cliente_id = c.cliente_id
+GROUP BY p.forma_pagamento, c.regiao
+ORDER BY c.regiao DESC;
+
+--- EXEMPLO 07: HAVING para cidades com mais de 15 clientes
+SELECT
+    cidade,
+    COUNT(*) AS qtd_clientes
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+GROUP BY cidade
+HAVING qtd_clientes > 45;
