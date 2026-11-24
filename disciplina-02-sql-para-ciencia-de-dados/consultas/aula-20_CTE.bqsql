@@ -1,0 +1,98 @@
+--------------------------------------------------------------------------------------
+-- Parte 2 — CTEs (WITH)
+--------------------------------------------------------------------------------------
+-- Uma CTE (Common Table Expression) é uma consulta nomeada que você declara antes 
+-- da query principal, usando a cláusula WITH. Depois, você referencia essa CTE pelo 
+-- nome, como se fosse uma tabela.
+--
+-- Sintaxe geral:
+-- WITH nome_da_cte AS (
+--     SELECT ...
+--     FROM ...
+-- )
+-- SELECT ...
+-- FROM nome_da_cte;
+--
+-- Você pode declarar várias CTEs separadas por vírgula:
+-- WITH 
+--     cte_a AS ( SELECT ... ),
+--     cte_b AS ( SELECT ... )
+-- SELECT ... FROM cte_a JOIN cte_b ...
+--
+-- Modelo mental: a CTE é como criar uma "tabela temporária" que só existe dentro 
+-- daquela query. Ela tem um nome, o que deixa o código muito mais legível quando o 
+-- resultado intermediário é complexo ou reusado.
+
+--------------------------------------------------------------------------------------
+-- 2.1 — CTE simples (equivalente a subquery no FROM)
+-- Exemplo 6: Reescrevendo o Exemplo 4 com CTE
+-- Cenário: média, mínimo e máximo de pedidos que cada cliente faz usando WITH:
+WITH pedidos_por_cliente AS (
+    SELECT 
+        cliente_id,
+        COUNT(*) AS qtd_pedidos
+    FROM `unipdsaula-513520.entregaJa.pedidos`
+    GROUP BY cliente_id
+    )
+SELECT 
+    ROUND(AVG(qtd_pedidos), 2) AS media_pedidos,
+    MIN(qtd_pedidos) AS min_pedidos,
+    MAX(qtd_pedidos) AS max_pedidos
+FROM pedidos_por_cliente
+;
+-- Explicação: O resultado é idêntico ao Exemplo 4. A diferença é apenas estilística:
+-- - Na versão com subquery, o cálculo intermediário fica aninhado dentro do FROM.
+-- - Na versão com CTE, o cálculo intermediário fica acima, com um nome 
+--   (pedidos_por_cliente), e a query principal fica limpa.
+-- Para um único uso, tanto faz. Mas assim que a lógica cresce, a versão com CTE lê 
+-- muito melhor — você vê primeiro o que está sendo calculado, depois como está sendo usado.
+
+--------------------------------------------------------------------------------------
+-- 2.2 — CTE reusada várias vezes (o caso onde CTE ganha claramente)
+-- Este é o caso mais forte para preferir CTE sobre subquery: quando o mesmo resultado 
+-- intermediário é usado mais de uma vez na query principal.
+--
+-- Exemplo 7: Clientes com número de pedidos acima da média
+-- Cenário: o time de CRM quer identificar clientes cujo número de pedidos está acima 
+-- da média de pedidos por cliente. Ou seja, precisamos:
+-- 1. Calcular quantos pedidos cada cliente fez (tabela intermediária).
+-- 2. Calcular a média desse número (usa o resultado de 1).
+-- 3. Filtrar os clientes cujo qtd_pedidos supera essa média (usa o resultado de 1 de novo).
+--
+-- O passo 1 é usado duas vezes. Com subquery, teríamos que repetir o GROUP BY inteiro. 
+-- Com CTE, calculamos uma vez e referenciamos duas.
+WITH pedidos_por_cliente AS (
+    SELECT 
+        cliente_id,
+        COUNT(*) AS qtd_pedidos
+    FROM `unipdsaula-513520.entregaJa.pedidos`
+    GROUP BY cliente_id
+    )
+SELECT 
+    ppc.cliente_id,
+    c.nome,
+    ppc.qtd_pedidos,
+    (SELECT
+        ROUND(AVG(qtd_pedidos), 2) 
+    FROM pedidos_por_cliente) AS media_geral
+FROM pedidos_por_cliente AS ppc
+    INNER JOIN `unipdsaula-513520.entregaJa.clientes_unicos` AS c
+    ON c.cliente_id = ppc.cliente_id
+WHERE ppc.qtd_pedidos > (
+    SELECT
+        ROUND(AVG(qtd_pedidos), 2)
+    FROM pedidos_por_cliente
+    )
+;
+
+-- Explicação:
+-- - A CTE pedidos_por_cliente é declarada uma única vez.
+-- - Depois, ela é referenciada três vezes: no FROM, no SELECT (para trazer 
+--   a média junto) e no WHERE (para filtrar acima da média).
+-- - Se tivéssemos feito isso com subquery, o mesmo SELECT cliente_id, 
+--   COUNT(*) ... GROUP BY cliente_id apareceria três vezes no código,
+--   difícil de manter, propenso a erros (se muda uma, esquece de mudar as outras).
+-- Nota: o BigQuery é livre para Materializar a CTE (calcular uma vez e 
+--   reaproveitar) ou reexecutar a cada referência — na prática, para 
+--   consultas simples, isso raramente é um gargalo. A vantagem principal aqui
+--   é de legibilidade e manutenção, não de performance.

@@ -313,6 +313,16 @@ As duas formas produzem os mesmos resultados na maioria dos casos. A escolha é 
 | **`SELECT (subquery) AS coluna`** | 1 valor | Valor auxiliar em cada linha |
 | **`WITH nome AS (...) SELECT ...`** | Tabela nomeada | Resultado intermediário reusável e legível |
 
+### Subquery vs. CTE (WITH) — resumo
+
+| SUBQUERY                                       | CTE (WITH)                                     |
+|------------------------------------------------|------------------------------------------------|
+| no `WHERE` (escalar) — compara com 1 valor     | `WITH nome AS (...)` — dá nome ao passo        |
+| `WHERE ... IN (...)` — filtra por uma lista    | lê de cima p/ baixo — legibilidade           |
+| no `FROM` — tabela temporária                  | `a, b AS`  (usa a) — encadeia passos            |
+| no `SELECT` — valor por linha                  | referência múltipla — reusa na query         |
+| roda primeiro — alimenta a externa           | inlined no BigQuery — clareza, não cache     |
+
 ---
 
 ## ⚠️ Cuidados importantes
