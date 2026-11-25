@@ -1,5 +1,6 @@
 {
   "python.defaultInterpreterPath": "C:\\Users\\mathe\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+  "notebook.markup.fontSize": 12,
   "workbench.editorAssociations": {
     "*.copilotmd": "vscode.markdown.preview.editor",
     "*.parquet": "duckdb.dataFileViewer",

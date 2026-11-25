@@ -1,0 +1,2 @@
+google-cloud-bigquery>=3,<4
+ipykernel>=6.29,<7

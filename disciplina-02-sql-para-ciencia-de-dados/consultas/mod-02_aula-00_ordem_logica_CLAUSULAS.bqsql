@@ -2,7 +2,7 @@
 --- ORDEM LOGICA DAS CLAUSULAS SQL
 ------------------------------------------
 -- 1. FROM: de onde vem os dados
--- 2. WHERE: filtra os registros (linhas) antes da agregação
+-- 2. WHERE: filtra os registros (linhas) antes da agregação (reduz o consumo de bytes)
 -- 3. GROUP BY: agrupa os registros por uma ou mais colunas
 -- 4. HAVING: filtra os grupos após a agregação
 -- 5. SELECT: seleciona as colunas e funções de agregação após o processamento
