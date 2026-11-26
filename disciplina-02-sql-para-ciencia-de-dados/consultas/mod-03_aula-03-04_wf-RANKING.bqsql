@@ -27,10 +27,10 @@
 --
 -- Função       | Empate                         | Pula posições? | Quando usar
 -- -------------|--------------------------------|----------------|-----------------------------
--- ROW_NUMBER() | Números diferentes             | —              | Numeração única (1, 2, 3, ...)
--- RANK()       | Mesma posição                  | Sim (1,2,2,4)  | Ranking "esportivo"
--- DENSE_RANK() | Mesma posição                  | Não (1,2,2,3)  | Ranking "compacto"
--- NTILE(n)     | Divide em n grupos semelhantes| —              | Quartis, decis, percentis
+-- ROW_NUMBER() | Números diferentes             | —              | Numeração única e sequencial (1, 2, 3, ...)
+-- RANK()       | Mesma posição                  | Sim (1,2,2,4)  | Ranking "esportivo" (números iguais para empate, pula o próximo)
+-- DENSE_RANK() | Mesma posição                  | Não (1,2,2,3)  | Ranking "compacto" (números iguais para empate, não pula o próximo)
+-- NTILE(n)     | Divide em n grupos semelhantes | —              | Quartis, decis, percentis
 
 -- %%
 --------------------------------------------------------------------------------------
@@ -39,7 +39,9 @@
 -- Cenário: listar os 10 clientes mais velhos com uma coluna que numera cada um
 -- por ordem de idade (1 = mais velho).
 SELECT
-    ROW_NUMBER() OVER (ORDER BY idade DESC) AS posicao,
+    ROW_NUMBER() OVER(
+        ORDER BY idade DESC)
+        AS posicao,
     cliente_id,
     nome,
     idade,
@@ -76,7 +78,9 @@ LIMIT 10
 -- Cenário: ranking dos restaurantes por nota média. Se dois restaurantes têm a
 -- mesma média, ficam empatados na mesma posição e o próximo pula.
 SELECT
-    RANK() OVER (ORDER BY ROUND(AVG(a.nota), 2) DESC) AS posicao,
+    RANK() OVER(
+        ORDER BY ROUND(AVG(a.nota), 2) DESC)
+        AS posicao,
     r.nome,
     r.categoria,
     ROUND(AVG(a.nota), 2) AS nota_media,
@@ -86,10 +90,9 @@ INNER JOIN `unipdsaula-513520.entregaJa.pedidos` AS p
     ON a.pedido_id = p.pedido_id
 INNER JOIN `unipdsaula-513520.entregaJa.restaurantes` AS r
     ON p.restaurante_id = r.restaurante_id
-WHERE p.status = 'Concluído'
+WHERE LOWER(p.status) = 'concluído'
 GROUP BY r.nome, r.categoria
 ORDER BY posicao
-LIMIT 15
 ;
 -- Como ler:
 -- RANK() atribui a mesma posição para linhas empatadas.
@@ -109,7 +112,9 @@ LIMIT 15
 -- Cenário: mesmo ranking do Exemplo 2, mas queremos posições consecutivas — dois
 -- em 2º, e o próximo em 3º (não 4º).
 SELECT
-    DENSE_RANK() OVER (ORDER BY ROUND(AVG(a.nota), 2) DESC) AS posicao,
+    DENSE_RANK() OVER(
+        ORDER BY ROUND(AVG(a.nota), 2) DESC)
+        AS posicao,
     r.nome,
     r.categoria,
     ROUND(AVG(a.nota), 2) AS nota_media,
@@ -122,7 +127,6 @@ INNER JOIN `unipdsaula-513520.entregaJa.restaurantes` AS r
 WHERE p.status = 'Concluído'
 GROUP BY r.nome, r.categoria
 ORDER BY posicao
-LIMIT 15
 ;
 -- Diferença para RANK():
 --
@@ -148,23 +152,31 @@ LIMIT 15
 -- reinicia a cada categoria.
 WITH ranking_por_categoria AS (
     SELECT
-        r.nome,
         r.categoria,
+        r.nome,
         ROUND(AVG(a.nota), 2) AS nota_media,
         COUNT(*) AS qtd_avaliacoes,
-        RANK() OVER (
+        RANK() OVER(
             PARTITION BY r.categoria
-            ORDER BY AVG(a.nota) DESC
-        ) AS posicao_na_categoria
-    FROM `unipdsaula-513520.entregaJa.avaliacoes` AS a
-    INNER JOIN `unipdsaula-513520.entregaJa.pedidos` AS p
-        ON a.pedido_id = p.pedido_id
-    INNER JOIN `unipdsaula-513520.entregaJa.restaurantes` AS r
-        ON p.restaurante_id = r.restaurante_id
-    WHERE p.status = 'Concluído'
-    GROUP BY r.nome, r.categoria
+            ORDER BY AVG(a.nota) DESC)
+            AS posicao_na_categoria
+    FROM `unipdsaula-513520.entregaJa.restaurantes` AS r
+        INNER JOIN `unipdsaula-513520.entregaJa.pedidos` AS p
+            ON r.restaurante_id = p.restaurante_id
+        INNER JOIN `unipdsaula-513520.entregaJa.avaliacoes` AS a
+            ON p.pedido_id = a.pedido_id
+    WHERE LOWER(p.status) = 'concluído'
+        AND a.nota IS NOT NULL 
+        AND r.categoria IS NOT NULL
+    GROUP BY r.categoria, r.nome
 )
-SELECT *
+SELECT
+    -- SELECT * para todas as colunas, porém, reposicionaremos as colunas no select
+    categoria,
+    posicao_na_categoria,
+    nome,
+    nota_media,
+    qtd_avaliacoes
 FROM ranking_por_categoria
 WHERE posicao_na_categoria <= 3
 ORDER BY categoria, posicao_na_categoria
@@ -191,14 +203,15 @@ SELECT
     cliente_id,
     nome,
     idade,
-    NTILE(4) OVER (ORDER BY idade ASC) AS quartil_idade
+    NTILE(4) OVER(
+        ORDER BY idade ASC)
+        AS quartil_idade
 FROM `unipdsaula-513520.entregaJa.clientes_unicos`
 ORDER BY idade ASC
-LIMIT 20
 ;
 -- Como ler:
 -- NTILE(4) divide as linhas em 4 grupos aproximadamente iguais, na ordem definida
--- pelo ORDER BY.
+-- pelo ORDER BY (é obrigatório ordenar).
 -- 25% mais jovens: quartil 1; próximos 25%: quartil 2; e assim até o quartil 4
 -- (25% mais velhos).
 -- Se o total não se divide exatamente por 4, os primeiros grupos recebem 1 linha
