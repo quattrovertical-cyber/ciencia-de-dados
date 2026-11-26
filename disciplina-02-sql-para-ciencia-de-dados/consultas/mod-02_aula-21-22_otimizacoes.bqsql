@@ -1,3 +1,4 @@
+-- %%
 --------------------------------------------------------------------------------------
 -- Aula 25: Plano de execução e bytes processados no BigQuery
 --------------------------------------------------------------------------------------
@@ -30,103 +31,102 @@
 
 --------------------------------------------------------------------------------------
 -- 1.1 — SELECT * vs. colunas específicas
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------;
+
+-- %%
 -- Exemplo 1: A query mais cara possível
 SELECT *
-FROM `unipds-503513.entregaja.pedidos`
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+-- Anote os bytes: 1.79MB;
 
--- Anote os bytes: _______ MB
+-- %%
 -- Exemplo 2: Só duas colunas
 SELECT pedido_id, taxa_entrega
-FROM `unipds-503513.entregaja.pedidos`
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+-- Anote os bytes: 0B;
 
--- Anote os bytes: _______ MB
+-- %%
 -- Exemplo 3: Só uma coluna
 SELECT pedido_id
-FROM `unipds-503513.entregaja.pedidos`
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+-- Anote os bytes: 126.25KB;
 
--- Anote os bytes: _______ MB
---
+-- %%
 -- Os três exemplos leem a mesma quantidade de linhas (a tabela inteira), mas o
 -- custo cai conforme reduzimos as colunas. Cada coluna lida representa bytes lidos.
 --
 -- Regra de ouro: SELECT * é o inimigo do bolso. Em produção, sempre liste somente
--- as colunas que realmente serão usadas.
+-- as colunas que realmente serão usadas.;
 
+-- %%
 --------------------------------------------------------------------------------------
 -- 1.2 — COUNT(*) é grátis
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------;
 -- Exemplo 4: Zero bytes!
 SELECT COUNT(*)
-FROM `unipds-503513.entregaja.pedidos`
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+-- Anote os bytes: 0B;
 
--- Anote os bytes: _______ B
+-- %%
 -- Exemplo 5: COUNT(coluna) lê a coluna
 SELECT COUNT(cliente_id)
-FROM `unipds-503513.entregaja.pedidos`
-;
-
--- Anote os bytes: _______ MB
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+-- Anote os bytes: 156.25KB;
 --
 -- COUNT(*) é respondido pelos metadados da tabela: o BigQuery já sabe quantas
 -- linhas existem e não precisa ler nada. COUNT(cliente_id) lê a coluna inteira
--- para verificar quantos valores não são nulos.
+-- para verificar quantos valores não são nulos.;
 
+-- %%
 --------------------------------------------------------------------------------------
 -- 1.3 — WHERE também não reduz bytes em tabelas comuns
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------;
 -- Exemplo 6: Sem filtro
 SELECT pedido_id, status
-FROM `unipds-503513.entregaja.pedidos`
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+-- Anote os bytes: 385.76KB;
 
--- Anote os bytes: _______ MB
+-- %%
 -- Exemplo 7: Com filtro — mesmo custo!
 SELECT pedido_id, status
-FROM `unipds-503513.entregaja.pedidos`
-WHERE status = 'Concluído'
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`
+WHERE status = 'Concluído';
+-- Anote os bytes: 385.76KB
 
--- Anote os bytes: _______ MB
---
 -- O WHERE filtra depois de ler os dados. Para reduzir bytes de verdade, a tabela
 -- precisa ser particionada pela coluna do filtro, como data_hora_pedido. Filtrar
 -- por data pode pular partições inteiras.
 --
 -- Regra prática: WHERE acelera o processamento, mas não reduz o custo de leitura
--- em tabelas não particionadas.
+-- em tabelas não particionadas.;
 
+-- %%
 --------------------------------------------------------------------------------------
 -- 1.4 — JOIN lê as duas tabelas
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------;
 -- Exemplo 8: Só clientes
 SELECT nome, plano
-FROM `unipds-503513.entregaja.clientes`
-;
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`;
+-- Anote os bytes: 12,40KB;
 
--- Anote os bytes: _______ MB
+-- %%
 -- Exemplo 9: Só pedidos
 SELECT pedido_id, cliente_id
-FROM `unipds-503513.entregaja.pedidos`
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`;
+-- Anote os bytes: 312.50KB;
 
--- Anote os bytes: _______ MB
+-- %%
 -- Exemplo 10: JOIN
 SELECT c.nome, c.plano, p.pedido_id
-FROM `unipds-503513.entregaja.clientes` AS c
-JOIN `unipds-503513.entregaja.pedidos` AS p
-    ON c.cliente_id = p.cliente_id
-;
-
--- Anote os bytes: _______ MB (aproximadamente a soma dos exemplos 9 + 10)
+FROM `unipdsaula-513520.entregaJa.clientes_unicos` AS c
+JOIN `unipdsaula-513520.entregaJa.pedidos` AS p
+    ON c.cliente_id = p.cliente_id;
+-- Anote os bytes: 328.81KB (aproximadamente a soma dos exemplos 9 + 10)
 --
 -- Cada tabela referenciada é lida separadamente. Selecione poucas colunas de cada
--- lado do JOIN para reduzir o custo.
+-- lado do JOIN para reduzir o custo.;
 
+-- %%
 --------------------------------------------------------------------------------------
 -- Parte 2 — O plano de execução
 --------------------------------------------------------------------------------------
@@ -149,7 +149,9 @@ JOIN `unipds-503513.entregaja.pedidos` AS p
 
 --------------------------------------------------------------------------------------
 -- 2.2 — Executando e olhando o plano
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------;
+
+-- %%
 -- Exemplo 12: Query com CTE + JOIN + agregação
 -- Depois de rodar, abra a aba "Detalhes da execução" (ou "Execution details"),
 -- ao lado dos resultados.
@@ -158,7 +160,7 @@ WITH pedidos_por_cliente AS (
         cliente_id,
         COUNT(*) AS qtd_pedidos,
         SUM(taxa_entrega) AS total_taxas
-    FROM `unipds-503513.entregaja.pedidos`
+    FROM `unipdsaula-513520.entregaJa.pedidos`
     GROUP BY cliente_id
 )
 SELECT 
@@ -167,13 +169,12 @@ SELECT
     ppc.qtd_pedidos,
     ppc.total_taxas
 FROM pedidos_por_cliente AS ppc
-JOIN `unipds-503513.entregaja.clientes` AS c
+JOIN `unipdsaula-513520.entregaJa.clientes_unicos` AS c
     ON c.cliente_id = ppc.cliente_id
 WHERE ppc.qtd_pedidos > 5
 ORDER BY ppc.qtd_pedidos DESC
-LIMIT 20
-;
-
+LIMIT 20;
+--
 -- O que observar:
 -- Stages (S00, S01, ...): cada fase do processamento.
 -- Records read: linhas que o stage recebeu de entrada.
@@ -184,8 +185,9 @@ LIMIT 20
 --
 -- O plano é o raio-X da query. Ele ajuda a descobrir onde uma consulta lenta está
 -- travando: normalmente em um stage com muito shuffle (JOIN pesado) ou numa
--- leitura enorme no S00 (falta de filtro ou de seleção de colunas).
+-- leitura enorme no S00 (falta de filtro ou de seleção de colunas).;
 
+-- %%
 --------------------------------------------------------------------------------------
 -- Parte 3 — A pegadinha final
 --------------------------------------------------------------------------------------
@@ -193,22 +195,22 @@ LIMIT 20
 --
 -- Opção A
 SELECT COUNT(*)
-FROM `unipds-503513.entregaja.pedidos`
-;
+FROM `unipdsaula-513520.entregaJa.pedidos`;
 
+-- %%
 -- Opção B
 SELECT COUNT(*)
-FROM `unipds-503513.entregaja.pedidos`
+FROM `unipdsaula-513520.entregaJa.pedidos`
 WHERE status = 'Concluído'
-;
 
 -- Resposta:
 -- A = 0 B (metadados).
 -- B lê a coluna status inteira para poder filtrar.
 --
 -- Contraintuitivo: filtrar parece mais barato, mas o BigQuery precisa ler a coluna
--- status para saber quais linhas passam. COUNT(*) sem filtro vem dos metadados.
+-- status para saber quais linhas passam. COUNT(*) sem filtro vem dos metadados.;
 
+-- %%
 --------------------------------------------------------------------------------------
 -- Resumo geral
 --------------------------------------------------------------------------------------
@@ -219,8 +221,9 @@ WHERE status = 'Concluído'
 -- WHERE em tabela particionada: pode pular partições inteiras.
 -- COUNT(*): zero bytes; vem dos metadados.
 -- COUNT(coluna): lê a coluna inteira.
--- JOIN: soma os bytes lidos das duas tabelas.
+-- JOIN: soma os bytes lidos das duas tabelas.;
 
+-- %%
 --------------------------------------------------------------------------------------
 -- Cuidados importantes
 --------------------------------------------------------------------------------------
@@ -233,4 +236,4 @@ WHERE status = 'Concluído'
 -- 7. Use o plano de execução para descobrir onde uma consulta lenta está gastando tempo.
 --
 -- Regra prática: antes de executar, olhe os bytes estimados. Se o número assustar,
--- repense o SELECT antes do WHERE.
+-- repense o SELECT antes do WHERE.;

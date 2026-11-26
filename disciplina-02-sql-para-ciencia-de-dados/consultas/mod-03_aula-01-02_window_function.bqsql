@@ -1,0 +1,237 @@
+-- %%
+--------------------------------------------------------------------------------------
+-- Aula 26: Window Functions — a estrutura
+--------------------------------------------------------------------------------------
+-- Objetivo: entender a estrutura básica de uma window function — como se escreve,
+-- o que cada pedaço significa e como o SQL "vê" o cálculo.
+-- Nesta aula o foco é absorver a forma. As funções específicas (RANK, ROW_NUMBER,
+-- LAG, LEAD, running totals e médias móveis) serão estudadas nas próximas aulas.
+--
+-- Diferença chave: até agora, tudo que olhava várias linhas juntas (SUM, AVG,
+-- COUNT) precisava de GROUP BY — e o GROUP BY colapsa várias linhas em uma.
+-- A window function calcula sobre linhas relacionadas sem colapsá-las: cada linha
+-- original continua no resultado, e o valor calculado aparece ao lado dela.
+
+--------------------------------------------------------------------------------------
+-- Modelo mental
+--------------------------------------------------------------------------------------
+-- Pense em três formas de olhar várias linhas juntas:
+--
+-- GROUP BY + agregação:
+--   Colapsa várias linhas em uma. Exemplo: média de idade por região,
+--   com uma linha por região.
+--
+-- Subquery/CTE escalar no SELECT:
+--   Traz um único valor ao lado de todas as linhas.
+--   Exemplo: cada pedido mais a média geral ao lado.
+--
+-- Window function:
+--   Traz um valor calculado sobre um conjunto de linhas relacionadas
+--   ao lado de cada linha. Exemplo: cada pedido mais a média da região
+--   daquele cliente ao lado.
+--
+-- A window function é a evolução natural da subquery escalar: em vez de um único
+-- valor global ao lado de todas as linhas, o valor é específico do grupo de cada
+-- linha — mas sem perder as linhas individuais no processo.
+
+--------------------------------------------------------------------------------------
+-- A estrutura básica
+--------------------------------------------------------------------------------------
+-- Toda window function segue este esqueleto:
+--
+-- funcao() OVER (
+--     [PARTITION BY coluna(s)]
+--     [ORDER BY coluna(s)]
+-- )
+--
+-- As partes, nesta ordem:
+-- 1. funcao(): o cálculo — AVG, SUM, COUNT, ROW_NUMBER, RANK, LAG etc. Obrigatória.
+-- 2. OVER (...): define quais linhas entram no cálculo. Obrigatória, mesmo vazia:
+--    OVER ().
+-- 3. PARTITION BY: divide as linhas em grupos; o cálculo se reinicia em cada grupo.
+--    Opcional.
+-- 4. ORDER BY: ordena as linhas dentro de cada grupo; importante para funções
+--    sequenciais como ROW_NUMBER, RANK e running totals. Opcional.
+--
+-- Regra do OVER: é ele que transforma uma função comum em window function.
+-- AVG(idade) sozinho precisa de GROUP BY. AVG(idade) OVER (...) é uma window
+-- function e não colapsa as linhas.;
+
+-- %%
+--------------------------------------------------------------------------------------
+-- Exemplo 1 — OVER () vazio (a mais simples possível)
+--------------------------------------------------------------------------------------
+-- Cenário: para cada cliente, mostrar nome e idade junto com a idade média geral,
+-- para comparar cada cliente com a média.
+SELECT
+    nome,
+    idade,
+    ROUND(AVG(idade) OVER(), 2)
+        AS idade_media_geral
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+;
+-- Como ler:
+-- AVG(idade) é a função de agregação.
+-- OVER () tem a janela vazia: considera todas as linhas como uma única janela.
+-- A mesma média aparece em todas as linhas, como numa subquery escalar no SELECT.
+--
+-- Este é o menor OVER possível — apenas os parênteses. Serve para fixar o
+-- esqueleto antes de adicionar peças. Não usamos GROUP BY e cada cliente aparece
+-- com a média ao lado.
+--
+-- Atenção: SELECT nome, idade, AVG(idade) FROM clientes (sem OVER) daria erro,
+-- porque nome e idade não estão em GROUP BY. O OVER permite combinar colunas
+-- individuais com a função de agregação.;
+
+-- %%
+--------------------------------------------------------------------------------------
+-- Exemplo 2 — PARTITION BY (média por grupo, ao lado da linha)
+--------------------------------------------------------------------------------------
+-- Cenário: para cada cliente, mostrar nome, região e idade junto com a idade
+-- média da região dele.
+SELECT
+    nome,
+    idade,
+    regiao,
+    ROUND(AVG(idade) OVER(PARTITION BY regiao), 2)
+            AS idade_media_regiao
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
+;
+-- Como ler:
+-- PARTITION BY regiao divide as linhas em grupos por região.
+-- AVG(idade) é calculado dentro de cada grupo.
+-- Clientes da mesma região veem a mesma média; regiões diferentes podem ter
+-- médias diferentes.
+--
+-- Comparação:
+-- GROUP BY regiao + AVG(idade): uma linha por região (colapsa).
+-- AVG(idade) OVER (PARTITION BY regiao): uma linha por cliente, com a média
+-- da região ao lado (não colapsa).
+--
+-- Analogia: PARTITION BY é o "GROUP BY do OVER". Ele não remove linhas; apenas
+-- define grupos internos para o cálculo da janela.;
+
+-- %%
+--------------------------------------------------------------------------------------
+-- Exemplo 3 — ORDER BY dentro do OVER (numerar linhas)
+--------------------------------------------------------------------------------------
+-- Cenário: listar os 10 pedidos mais recentes e numerá-los por ordem de chegada
+-- numa coluna separada (1 = mais recente).
+SELECT
+    ROW_NUMBER() OVER(
+        ORDER BY data_hora_pedido DESC)
+        AS posicao,
+    pedido_id,
+    cliente_id,
+    data_hora_pedido
+FROM `unipdsaula-513520.entregaJa.pedidos`
+ORDER BY data_hora_pedido DESC
+;
+    /* a outra solução, a query abaixo, não criaria a coluna
+    SELECT
+        pedido_id,
+        cliente_id,
+        data_hora_pedido,
+    FROM `unipdsaula-513520.entregaJa.pedidos`
+    ORDER BY data_hora_pedido DESC
+    LIMIT 10; */
+
+-- Como ler:
+-- ROW_NUMBER() atribui um número sequencial para cada linha da janela.
+-- OVER (ORDER BY data_hora_pedido DESC) ordena as linhas da tabela por data
+-- decrescente: 1 para o pedido mais recente, 2 para o seguinte, e assim por diante.
+-- Não há PARTITION BY: a janela é a tabela toda.
+--
+-- O ORDER BY dentro do OVER define como a window function conta (quem é o 1º,
+-- o 2º etc.). O ORDER BY no fim da query define como o resultado é exibido.
+-- Nesta aula é comum os dois serem iguais, mas eles têm papéis diferentes.;
+
+-- %%
+--------------------------------------------------------------------------------------
+-- Exemplo 4 — PARTITION BY + ORDER BY juntos (o formato completo)
+--------------------------------------------------------------------------------------
+-- Cenário: numerar os pedidos de cada cliente por ordem cronológica, para saber
+-- se cada pedido é o 1º, 2º, 3º daquele cliente.
+SELECT
+    ROW_NUMBER() OVER(
+        PARTITION BY p.cliente_id
+        ORDER BY p.data_hora_pedido ASC)
+        AS numero_pedido_cliente,
+    p.pedido_id,
+    p.cliente_id,
+    c.nome,
+    p.data_hora_pedido
+FROM `unipdsaula-513520.entregaJa.pedidos` AS p
+INNER JOIN `unipdsaula-513520.entregaJa.clientes_unicos`AS c
+    ON p.cliente_id = c.cliente_id
+;
+-- Como ler, peça por peça:
+-- 1. PARTITION BY cliente_id divide as linhas em grupos por cliente.
+-- 2. ORDER BY data_hora_pedido ASC ordena cada grupo do pedido mais antigo
+--    para o mais novo.
+-- 3. ROW_NUMBER() dá um número sequencial começando em 1 para cada grupo —
+--    reinicia a cada cliente.
+--
+-- Para o cliente A, os pedidos recebem 1, 2, 3, 4... na ordem cronológica.
+-- Para o cliente B, a contagem também começa em 1. É como se ROW_NUMBER
+-- "zerasse o contador" a cada novo cliente.
+--
+-- Este é o formato mais completo e comum: PARTITION BY indica por qual coluna
+-- agrupar e ORDER BY indica em qual ordem contar dentro do grupo.;
+
+-- %%
+--------------------------------------------------------------------------------------
+-- Resumo — os quatro formatos
+--------------------------------------------------------------------------------------
+-- funcao() OVER ()
+--   Aplica a função sobre todas as linhas; mesmo valor em todas.
+--   Exemplo: média geral ao lado de cada linha.
+--
+-- funcao() OVER (PARTITION BY x)
+--   Aplica a função por grupo; mesmo valor dentro do grupo.
+--   Exemplo: média da região ao lado de cada cliente.
+--
+-- funcao() OVER (ORDER BY x)
+--   Aplica a função em ordem; o valor muda linha a linha.
+--   Exemplo: ranking global ou running total.
+--
+-- funcao() OVER (PARTITION BY x ORDER BY y)
+--   Aplica a função em ordem, dentro de cada grupo.
+--   Exemplo: identificar o 1º, 2º ou 3º pedido de cada cliente.
+
+--------------------------------------------------------------------------------------
+-- Cuidados importantes
+--------------------------------------------------------------------------------------
+-- 1. Window functions não usam GROUP BY para formar a janela. O agrupamento é
+--    feito dentro do OVER com PARTITION BY. Misturar os dois na mesma query é
+--    raro e costuma indicar confusão de intenção.
+--
+-- 2. O resultado mantém o mesmo número de linhas da tabela original. Ao contrário
+--    do GROUP BY, a window function não colapsa as linhas; acrescenta o valor
+--    calculado ao lado delas.
+--
+-- 3. OVER é obrigatório, mesmo vazio. AVG(idade) OVER () funciona; AVG(idade)
+--    sozinho, sem GROUP BY, dá erro.
+--
+-- 4. ORDER BY dentro do OVER e ORDER BY no fim da query têm papéis diferentes.
+--    O primeiro define como a janela conta; o segundo define como o resultado
+--    é exibido. Podem ser iguais ou diferentes.
+--
+-- 5. Window functions rodam depois do WHERE. Se filtrar WHERE status = 'Concluído',
+--    a janela só enxerga as linhas concluídas; os cancelados não entram no cálculo.
+--
+-- 6. Não dá para usar window function no WHERE, pois elas são calculadas depois.
+--    Para filtrar pelo resultado de uma window function, use uma CTE ou subquery
+--    no FROM.
+
+--------------------------------------------------------------------------------------
+-- O que vem depois
+--------------------------------------------------------------------------------------
+-- Nas próximas aulas você vai explorar quais funções cabem neste esqueleto:
+-- RANK, DENSE_RANK, ROW_NUMBER, LAG, LEAD, SUM como running total e AVG como
+-- média móvel, entre outras.
+--
+-- A estrutura não muda. É sempre:
+-- funcao() OVER (PARTITION BY ... ORDER BY ...)
+-- O que varia é a função e o que você coloca em cada uma das duas partes
+-- de dentro do OVER.;
