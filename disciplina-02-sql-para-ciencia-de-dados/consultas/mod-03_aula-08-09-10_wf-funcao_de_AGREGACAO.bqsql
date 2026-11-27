@@ -46,8 +46,11 @@
 --    )
 ---------------------------------
 --
--- com ORDER BY vira acumulado; com ROWS BETWEEN virá média móvel. Só com o PARTITIO BY, repete o
--- agregado do grupo ao lado de cada linha. Sem PARTITION BY, é o total geral.
+-- SUM(...) OVER(PARTITION BY...), repete o agregado do grupo ao lado de cada linha.
+-- SUM(...) OVER(ORDER BY...), retorna o acumulado linha após linha.
+-- AVG(...) OVER(ORDER BY dia ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), torna-se 
+--          um agregador "rolling window", nesse caso, uma média dos últimos 3 dias.
+-- Sem PARTITION BY, é o total geral.
 
 -- %%
 --------------------------------------------------------------------------------------
@@ -60,8 +63,10 @@ SELECT
     pedido_item_id,
     quantidade,
     preco_unitario,
-    quantidade * preco_unitario AS subtotal_item,
-    SUM(quantidade * preco_unitario) OVER (PARTITION BY pedido_id) AS total_pedido
+    (quantidade * preco_unitario) AS subtotal_item,
+    SUM(quantidade * preco_unitario) OVER(
+        PARTITION BY pedido_id)
+        AS total_pedido
 FROM `unipdsaula-513520.entregaJa.pedido_itens`
 ORDER BY pedido_id, pedido_item_id
 ;
