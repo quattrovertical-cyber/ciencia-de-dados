@@ -63,9 +63,10 @@ SELECT
     pedido_item_id,
     quantidade,
     preco_unitario,
-    (quantidade * preco_unitario) AS subtotal_item,
-    SUM(quantidade * preco_unitario) OVER(
-        PARTITION BY pedido_id)
+    ROUND(quantidade * preco_unitario, 2) -- subtotal do item na linha
+        AS subtotal_item,
+    ROUND(SUM(quantidade * preco_unitario) OVER( -- subtotal do pedido inteiro, repetido em cada item
+        PARTITION BY pedido_id), 2)
         AS total_pedido
 FROM `unipdsaula-513520.entregaJa.pedido_itens`
 ORDER BY pedido_id, pedido_item_id
@@ -95,10 +96,11 @@ SELECT
     avaliacao_id,
     data_avaliacao,
     nota,
-    SUM(nota) OVER (ORDER BY data_avaliacao) AS notas_acumuladas
+    ROUND(SUM(nota) OVER(
+        ORDER BY data_avaliacao), 2)
+        AS notas_acumuladas
 FROM `unipdsaula-513520.entregaJa.avaliacoes`
 ORDER BY data_avaliacao
-LIMIT 15
 ;
 -- Como ler:
 -- SUM(nota) OVER (ORDER BY data_avaliacao) soma todas as linhas da janela até a linha
@@ -128,14 +130,15 @@ SELECT
     entregador_id,
     nome,
     data_inicio,
-    COUNT(*) OVER (
-        PARTITION BY cidade
-        ORDER BY data_inicio
-    ) AS contratados_ate_a_data,
-    COUNT(*) OVER (PARTITION BY cidade) AS total_entregadores_cidade
+    COUNT(*) OVER(
+        PARTITION BY cidade ORDER BY data_inicio)
+        AS contratados_ate_a_data,
+    COUNT(*) OVER(
+        PARTITION BY cidade)
+        AS total_entregadores_cidade
 FROM `unipdsaula-513520.entregaJa.entregadores`
 ORDER BY cidade, data_inicio
-LIMIT 20
+--LIMIT 20
 ;
 -- Como ler:
 -- COUNT(*) OVER (PARTITION BY cidade ORDER BY data_inicio) conta as linhas até a data
@@ -163,11 +166,14 @@ SELECT
     nome,
     plano,
     idade,
-    ROUND(AVG(idade) OVER (PARTITION BY plano), 2) AS idade_media_plano,
-    ROUND(idade - AVG(idade) OVER (PARTITION BY plano), 2) AS diferenca_para_media
-FROM `unipds-503513.entregaja.clientes`
+    ROUND(AVG(idade) OVER(
+        PARTITION BY plano), 2)
+        AS idade_media_plano,
+    ROUND(idade - AVG(idade) OVER(PARTITION BY plano), 2)
+    AS diferenca_para_media
+FROM `unipdsaula-513520.entregaJa.clientes_unicos`
 ORDER BY plano, idade DESC
-LIMIT 25
+--LIMIT 25
 ;
 -- Como ler:
 -- 1. AVG(idade) OVER (PARTITION BY plano) calcula a idade média dentro do plano — sem
@@ -192,23 +198,46 @@ WITH avaliacoes_por_dia AS (
     SELECT
         DATE(data_avaliacao) AS dia,
         ROUND(AVG(nota), 2) AS nota_media_dia
-    FROM `unipds-503513.entregaja.avaliacoes`
+    FROM `unipdsaula-513520.entregaJa.avaliacoes`
+    GROUP BY dia -- agrega todas as avaliações do dia
+)
+SELECT
+    dia,
+    nota_media_dia,
+    ROUND(AVG(nota_media_dia) OVER(
+        ORDER BY dia ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2)
+        AS media_movel_7d
+FROM avaliacoes_por_dia
+ORDER BY dia
+--LIMIT 30
+;
+
+-- alternativa corrigida por mim
+WITH avaliacoes_por_dia AS (
+    SELECT
+        DATE(data_avaliacao) AS dia,
+        SUM(nota) AS soma_notas_dia,
+        COUNT(nota) AS qtd_avaliacoes_dia,
+        ROUND(AVG(nota), 2) AS nota_media_dia
+    FROM `unipdsaula-513520.entregaJa.avaliacoes`
     GROUP BY dia
 )
 SELECT
     dia,
     nota_media_dia,
     ROUND(
-        AVG(nota_media_dia) OVER (
-            ORDER BY dia
-            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-        ),
-        2
-    ) AS media_movel_7d
+        SUM(soma_notas_dia) OVER (
+            ORDER BY UNIX_DATE(dia) 
+            RANGE BETWEEN 6 PRECEDING AND CURRENT ROW
+        ) / 
+        SUM(qtd_avaliacoes_dia) OVER (
+            ORDER BY UNIX_DATE(dia) 
+            RANGE BETWEEN 6 PRECEDING AND CURRENT ROW
+        ), 
+    2) AS media_movel_7d_real
 FROM avaliacoes_por_dia
-ORDER BY dia
-LIMIT 30
-;
+ORDER BY dia;
+
 -- Como ler:
 -- A CTE agrega as avaliações por dia (uma linha por dia, com a nota média daquele dia).
 -- Na query externa, AVG(nota_media_dia) OVER (ORDER BY dia ROWS BETWEEN 6 PRECEDING AND
@@ -228,6 +257,19 @@ LIMIT 30
 -- Regra sutil: com ORDER BY e sem ROWS BETWEEN, o SQL assume UNBOUNDED PRECEDING AND
 -- CURRENT ROW (do início até agora — o running total). Se você quer uma janela móvel de
 -- N linhas, precisa escrever o ROWS BETWEEN explicitamente.
+--
+-- RANGE BETWEEN ... AND ...: é o frame lógico da janela. Ele olha para o VALOR da
+-- coluna no ORDER BY (e não a quantidade de linhas), incluindo empates. Com datas no
+-- BigQuery, converta a data para número usando UNIX_DATE(data). Alguns frames comuns:
+-- Frame                                                    | Significado (usando ORDER BY UNIX_DATE(data))
+-- ---------------------------------------------------------|-----------------------------------------------------------------
+-- RANGE BETWEEN 6 PRECEDING AND CURRENT ROW                | Janela de 7 dias — data atual menos 6 dias até hoje (com empates)
+-- RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW        | Desde a data mais antiga até a data atual (inclui empates)
+-- RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING        | Da data atual (inclui empates) até a data mais recente
+-- RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING| Todas as datas — anula o efeito do ORDER BY
+--
+-- Regra sutil: no BigQuery, RANGE não aceita DATE diretamente; use UNIX_DATE(data)
+-- (1 unidade = 1 dia) ou UNIX_SECONDS(ts) (1 unidade = 1 segundo) no ORDER BY.
 
 -- %%
 --------------------------------------------------------------------------------------
@@ -241,11 +283,14 @@ SELECT
     item_id,
     nome_item,
     preco,
-    MAX(preco) OVER (PARTITION BY categoria_item) AS maior_preco_categoria,
-    MIN(preco) OVER (PARTITION BY categoria_item) AS menor_preco_categoria
-FROM `unipds-503513.entregaja.itens`
+    MAX(preco) OVER(
+        PARTITION BY categoria_item)
+        AS maior_preco_categoria,
+    MIN(preco) OVER(
+        PARTITION BY categoria_item)
+        AS menor_preco_categoria
+FROM `unipdsaula-513520.entregaJa.itens`
 ORDER BY categoria_item, preco DESC
-LIMIT 25
 ;
 -- Como ler:
 -- MAX(preco) OVER (PARTITION BY categoria_item) traz o maior preço dentro da categoria.
